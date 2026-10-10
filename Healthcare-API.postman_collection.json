@@ -1,0 +1,652 @@
+{
+  "info": {
+    "_postman_id": "9ad74797-3846-4cba-8f0b-d242987afee9",
+    "name": "Patient Management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "58540748",
+    "_collection_link": "https://go.postman.co/collection/58540748-9ad74797-3846-4cba-8f0b-d242987afee9?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "TC01 Create Patient with valid data",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "",
+              "pm.environment.set(\"patientId\", response.id);",
+              "",
+              "pm.test(\"Status code is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Patient ID is generated\", function () {",
+              "    pm.expect(response.id).to.not.be.empty;",
+              "});",
+              "",
+              "pm.test(\"Resource type is Patient\", function () {",
+              "    pm.expect(response.resourceType).to.eql(\"Patient\");",
+              "});",
+              "",
+              "pm.test(\"First name is correct\", function () {",
+              "    pm.expect(response.name[0].given[0]).to.eql(pm.variables.get(\"firstName\"));",
+              "});",
+              "",
+              "pm.test(\"Last name is correct\", function () {",
+              "    pm.expect(response.name[0].family).to.eql(pm.environment.get(\"currentLastName\"));",
+              "});",
+              "",
+              "pm.test(\"Gender is correct\", function () {",
+              "    pm.expect(response.gender).to.eql(pm.variables.get(\"gender\"));",
+              "});",
+              "",
+              "pm.test(\"Birth date is correct\", function () {",
+              "    pm.expect(response.birthDate).to.eql(pm.variables.get(\"birthDate\"));",
+              "});",
+              "pm.environment.set(\"patientId\", pm.response.json().id);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "function iterationValue(key, fallback) {",
+              "    const value = pm.iterationData.get(key);",
+              "    return value !== undefined && value !== null && String(value).trim() !== \"\"",
+              "        ? String(value).trim()",
+              "        : fallback;",
+              "}",
+              "",
+              "const firstName = iterationValue(\"firstName\", \"Ashwini\");",
+              "const baseLastName = iterationValue(\"lastName\", \"Patient\");",
+              "let gender = iterationValue(\"gender\", \"unknown\");",
+              "let birthDate = iterationValue(\"birthDate\", \"1990-01-01\");",
+              "",
+              "if (!/^(male|female|other|unknown)$/.test(gender)) {",
+              "    gender = \"unknown\";",
+              "}",
+              "",
+              "if (/^\\d{2}\\/\\d{2}\\/\\d{4}$/.test(birthDate)) {",
+              "    const [day, month, year] = birthDate.split(\"/\");",
+              "    birthDate = `${year}-${month}-${day}`;",
+              "}",
+              "",
+              "const uniqueLastName = `${baseLastName}-${Date.now()}`;",
+              "",
+              "// Use request-scoped values so the body and assertions share this iteration's exact values.",
+              "pm.variables.set(\"firstName\", firstName);",
+              "pm.variables.set(\"lastName\", uniqueLastName);",
+              "pm.variables.set(\"gender\", gender);",
+              "pm.variables.set(\"birthDate\", birthDate);",
+              "pm.environment.set(\"currentLastName\", uniqueLastName);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/fhir+json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/fhir+json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resourceType\": \"Patient\",\n  \"name\": [\n    {\n      \"family\": \"{{lastName}}\",\n      \"given\": [\n        \"{{firstName}}\"\n      ]\n    }\n  ],\n  \"gender\": \"{{gender}}\",\n  \"birthDate\": \"{{birthDate}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/Patient",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "Patient"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC02 Patient details with ID validation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Resource type is Patient\", function () {",
+              "    pm.expect(pm.response.json().resourceType)",
+              "        .to.eql(\"Patient\");",
+              "});",
+              "",
+              "pm.test(\"Patient ID is correct\", function () {",
+              "    pm.expect(pm.response.json().id)",
+              "       .to.eql(pm.environment.get(\"patientId\"));",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Force this request to use the patient created by TC01 in the current iteration.",
+              "const patientId = pm.environment.get(\"patientId\");",
+              "pm.variables.set(\"patientId\", patientId);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/Patient/{{patientId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "Patient",
+            "{{patientId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC03 Search patient",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "const expectedFamily = pm.environment.get(\"currentLastName\");",
+              "",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response is a Bundle\", function () {",
+              "    pm.expect(response.resourceType).to.eql(\"Bundle\");",
+              "});",
+              "",
+              "pm.test(\"Bundle type is searchset\", function () {",
+              "    pm.expect(response.type).to.eql(\"searchset\");",
+              "});",
+              "",
+              "pm.test(\"At least one patient is found\", function () {",
+              "    pm.expect(response.total).to.be.above(0);",
+              "});",
+              "",
+              "pm.test(\"Correct patient is returned\", function () {",
+              "    const patient = response.entry.find(entry =>",
+              "        entry.resource &&",
+              "        entry.resource.name &&",
+              "        entry.resource.name.some(name => name.family === expectedFamily)",
+              "    ).resource;",
+              "",
+              "    pm.expect(patient.resourceType).to.eql(\"Patient\");",
+              "    pm.expect(patient.name[0].family).to.eql(expectedFamily);",
+              "    pm.expect(patient.name[0].given[0]).to.eql(pm.variables.get(\"firstName\"));",
+              "    pm.expect(patient.gender).to.eql(pm.variables.get(\"gender\"));",
+              "    pm.expect(patient.birthDate).to.eql(pm.variables.get(\"birthDate\"));",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "inherit"
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "{{base_url}}/Patient?family={{currentLastName}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "Patient"
+          ],
+          "query": [
+            {
+              "key": "family",
+              "value": "{{currentLastName}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC04 Update patient and Verify updated patient",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const success = [200, 201].includes(pm.response.code);",
+              "let response;",
+              "",
+              "pm.test(\"Status code is successful\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "",
+              "if (success) {",
+              "    response = pm.response.json();",
+              "",
+              "    pm.test(\"Resource type is Patient\", function () {",
+              "        pm.expect(response.resourceType).to.eql(\"Patient\");",
+              "    });",
+              "",
+              "    pm.test(\"Patient ID is correct\", function () {",
+              "        pm.expect(response.id).to.eql(pm.variables.get(\"patientId\"));",
+              "    });",
+              "",
+              "    pm.test(\"Updated last name is correct\", function () {",
+              "        pm.expect(response.name).to.be.an(\"array\").that.is.not.empty;",
+              "        pm.expect(response.name[0].family).to.eql(pm.variables.get(\"lastName\") + \"-Updated\");",
+              "    });",
+              "",
+              "    pm.test(\"First name is correct\", function () {",
+              "        pm.expect(response.name[0].given).to.be.an(\"array\").that.is.not.empty;",
+              "        pm.expect(response.name[0].given[0]).to.eql(pm.variables.get(\"firstName\"));",
+              "    });",
+              "",
+              "    pm.test(\"Gender is correct\", function () {",
+              "        pm.expect(response.gender).to.eql(pm.variables.get(\"gender\"));",
+              "    });",
+              "",
+              "    pm.test(\"Birth date is correct\", function () {",
+              "        pm.expect(response.birthDate).to.eql(pm.variables.get(\"birthDate\"));",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "function resolveValue(key, fallback) {",
+              "    const iterationValue = pm.iterationData.get(key);",
+              "    const existingValue = pm.variables.get(key);",
+              "    const value = iterationValue !== undefined && iterationValue !== null && String(iterationValue).trim() !== \"\"",
+              "        ? iterationValue",
+              "        : (existingValue !== undefined && existingValue !== null && String(existingValue).trim() !== \"\" ? existingValue : fallback);",
+              "",
+              "    if (value !== undefined && value !== null && String(value).trim() !== \"\") {",
+              "        pm.variables.set(key, String(value).trim());",
+              "        return String(value).trim();",
+              "    }",
+              "    return \"\";",
+              "}",
+              "",
+              "const patientId = resolveValue(\"patientId\");",
+              "if (!patientId) {",
+              "    throw new Error(\"patientId is required. Run 'TC01 Create Patient with valid data' first or set a valid patientId in the active environment.\");",
+              "}",
+              "",
+              "resolveValue(\"firstName\", \"Ashwini\");",
+              "resolveValue(\"lastName\", \"Patient\");",
+              "resolveValue(\"gender\", \"unknown\");",
+              "",
+              "let birthDate = resolveValue(\"birthDate\", \"1990-01-01\");",
+              "if (/^\\d{2}\\/\\d{2}\\/\\d{4}$/.test(birthDate)) {",
+              "    const parts = birthDate.split(\"/\");",
+              "    birthDate = `${parts[2]}-${parts[1]}-${parts[0]}`;",
+              "    pm.variables.set(\"birthDate\", birthDate);",
+              "}",
+              "",
+              "if (!/^(male|female|other|unknown)$/.test(pm.variables.get(\"gender\"))) {",
+              "    pm.variables.set(\"gender\", \"unknown\");",
+              "}"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "inherit"
+        },
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/fhir+json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/fhir+json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"resourceType\": \"Patient\",\r\n  \"id\": \"{{patientId}}\",\r\n  \"name\": [\r\n    {\r\n      \"family\": \"{{lastName}}-Updated\",\r\n      \"given\": [\r\n        \"{{firstName}}\"\r\n      ]\r\n    }\r\n  ],\r\n  \"gender\": \"{{gender}}\",\r\n  \"birthDate\": \"{{birthDate}}\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/Patient/{{patientId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "Patient",
+            "{{patientId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC05 Delete patient and Verify deleted patient",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "console.log(\"Patient ID to delete:\", pm.environment.get(\"patientId\"));"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Patient deletion successful\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response indicates patient does not exist\", function () {",
+              "    const response = pm.response.json();",
+              "",
+              "    pm.expect(response.resourceType).to.eql(\"OperationOutcome\");",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/Patient/{{patientId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "Patient",
+            "{{patientId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC06 Delete patient with invalid or missing patientId",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const patientId = pm.environment.get(\"patientId\");",
+              "const invalidPatientId = patientId && String(patientId).trim()",
+              "    ? `${String(patientId).trim()}-invalid`",
+              "    : \"missing-patient-id\";",
+              "",
+              "pm.variables.set(\"invalidPatientId\", invalidPatientId);",
+              "console.log(\"Invalid patient ID being used:\", invalidPatientId);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 or in the 400-499 range\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 405, 409]);",
+              "});",
+              "",
+              "const response = pm.response.json();",
+              "",
+              "pm.test(\"Response is an OperationOutcome\", function () {",
+              "    pm.expect(response.resourceType).to.eql(\"OperationOutcome\");",
+              "});",
+              "",
+              "pm.test(\"OperationOutcome contains issues\", function () {",
+              "    pm.expect(response.issue).to.be.an(\"array\").that.is.not.empty;",
+              "});",
+              "",
+              "pm.test(\"First issue contains required details\", function () {",
+              "    const issue = response.issue[0];",
+              "",
+              "    pm.expect(issue.severity).to.be.a(\"string\");",
+              "    pm.expect(",
+              "        typeof issue.code === \"string\" || typeof issue.diagnostics === \"string\"",
+              "    ).to.be.true;",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/Patient/{{invalidPatientId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "Patient",
+            "{{invalidPatientId}}"
+          ]
+        },
+        "description": "Generated from cURL: curl --request DELETE --url '{{base_url}}/Patient/{{invalidPatientId}}'"
+      },
+      "response": []
+    },
+    {
+      "name": "TC07 Create invalid data",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "",
+              "pm.test(\"Request is rejected with HTTP 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test(\"Response resource type is OperationOutcome\", function () {",
+              "    pm.expect(response.resourceType).to.eql(\"OperationOutcome\");",
+              "});",
+              "",
+              "pm.test(\"OperationOutcome contains processing error\", function () {",
+              "    pm.expect(response.issue).to.be.an(\"array\").that.is.not.empty;",
+              "    const matchingIssue = response.issue.some(issue =>",
+              "        issue.code === \"processing\" && issue.severity === \"error\"",
+              "    );",
+              "    pm.expect(matchingIssue, \"expected issue code=processing and severity=error\").to.be.true;",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "inherit"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/fhir+json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/fhir+json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resourceType\": \"Patient\",\n  \"name\": [\n    {\n      \"family\": \"Synthetic-InvalidDate-001\",\n      \"given\": [\"TestPatient\"]\n    }\n  ],\n  \"gender\": \"female\",\n  \"birthDate\": \"not-a-date\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/Patient",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "Patient"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC08 Create patient with invalid gender",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "",
+              "pm.test(\"Request is rejected with HTTP 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test(\"Response resource type is OperationOutcome\", function () {",
+              "    pm.expect(response.resourceType).to.eql(\"OperationOutcome\");",
+              "});",
+              "",
+              "pm.test(\"OperationOutcome contains processing error\", function () {",
+              "    pm.expect(response.issue).to.be.an(\"array\").that.is.not.empty;",
+              "    const matchingIssue = response.issue.some(issue =>",
+              "        issue.code === \"processing\" && issue.severity === \"error\"",
+              "    );",
+              "    pm.expect(matchingIssue, \"expected issue code=processing and severity=error\").to.be.true;",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/fhir+json",
+            "disabled": false
+          },
+          {
+            "key": "Accept",
+            "value": "application/fhir+json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"resourceType\": \"Patient\",\r\n    \"name\": [\r\n        {\r\n            \"family\": \"Synthetic-InvalidGender-001\",\r\n            \"given\": [\r\n                \"TestPatient\"\r\n            ]\r\n        }\r\n    ],\r\n    \"gender\": \"not-a-gender\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/Patient",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "Patient"
+          ]
+        },
+        "description": "Generated from cURL: curl --request POST '{{base_url}}/Patient' --header 'Content-Type: application/fhir+json' --header 'Accept: application/fhir+json' --data-raw '{\"resourceType\":\"Patient\",\"name\":[{\"family\":\"Synthetic-InvalidGender-001\",\"given\":[\"TestPatient\"]}],\"gender\":\"not-a-gender\"}'"
+      },
+      "response": []
+    }
+  ]
+}
